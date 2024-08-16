@@ -26,7 +26,7 @@ user_data = {}
 #     user_id = interaction.user.id
 #     if user_id not in user_data:
 #         user_data[user_id] = {}
-#     user_data[user_id]['hourly_pay'] = pay
+#     user_data[user_id]['HOURLY_PAY'] = pay
 #     pay = '{:,.2f}'.format(pay)
 #     await interaction.response.send_message(f'時給を{pay}円に設定しました')
 
