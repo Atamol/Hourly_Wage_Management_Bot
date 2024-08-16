@@ -36,7 +36,7 @@ async def begin_work(interaction: discord.Interaction):
     user_id = interaction.user.id
     if user_id not in user_data:
         user_data[user_id] = {}
-#   if user_id not in user_data or 'hourly_pay' not in user_data[user_id]:
+#   if user_id not in user_data or 'HOURLY_PAY' not in user_data[user_id]:
 #      await interaction.response.send_message('時給が設定されていません。')
 #       return
 
@@ -71,6 +71,7 @@ async def rest_work(interaction: discord.Interaction):
 async def finish_work(interaction: discord.Interaction):
     user_id = interaction.user.id
     if user_id in user_data and 'start_time' in user_data[user_id]:
+        
         # `/rest`コマンドの途中であればリアクションによる確認の通知を行う
         if 'rest_start_time' in user_data[user_id]:
             await interaction.response.defer()
@@ -139,7 +140,7 @@ async def finish_work(interaction: discord.Interaction):
 @app_commands.describe(hours='作業時間（時）', minutes='作業時間（分）', message_link='削除するメッセージのリンク（オプション）')
 async def fix_work(interaction: discord.Interaction, hours: int, minutes: int, message_link: str = None):
     try:
-        if message_link is not None and message_link.strip():  # リンクが存在し，空白でない場合に処理を行う
+        if message_link is not None and message_link.strip():  # リンクが存在し，オプションが空白でない場合に処理を行う
             try:
                 message_id = int(message_link.split('/')[-1])
                 channel_id = int(message_link.split('/')[-2])
@@ -147,6 +148,7 @@ async def fix_work(interaction: discord.Interaction, hours: int, minutes: int, m
                 message_to_delete = await channel.fetch_message(message_id)
                 id_code = ['[finish]', '[fix]']
 
+                # 他人が入力したコマンドや，無関係のメッセージは削除できないようにする
                 if message_to_delete.author == bot.user:
                     if any(code in message_to_delete.content for code in id_code):
                         if interaction.user.mention in message_to_delete.content:
@@ -209,7 +211,7 @@ async def daily_sum_work(interaction: discord.Interaction, month: int, day: int)
     end_time = start_time + datetime.timedelta(hours=23, minutes=59, seconds=59)
 
     
-    # 指定された範囲内のメッセージを検索
+    # 指定された範囲内のメッセージを検索（ limit の値を変更することで検索件数を変更できる
     async for message in channel.history(limit=1000, after=start_time, before=end_time):
         if message.author == bot.user and user_mention in message.content and any(code in message.content for code in id_code):
             pay_match = pay_pattern.search(message.content)
