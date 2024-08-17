@@ -19,23 +19,24 @@ class bot(discord.Client):
 bot = bot(intents=discord.Intents.default())
 user_data = {}
 
-@bot.tree.command(name="hourly_pay", description="時給を設定する")
-async def set_hourly_pay(interaction: discord.Interaction, h_pay: int):
+# 時給の設定
+@bot.tree.command(name="hourly_wage", description="時給を設定する")
+async def set_hourly_wage(interaction: discord.Interaction, h_wage: int):
     user_id = interaction.user.id
     if user_id not in user_data:
        user_data[user_id] = {}
-    user_data[user_id]["hourly_pay"] = h_pay
-    pay = "{:,.2f}".format(pay)
-    await interaction.response.send_message(f"時給を{(h_pay):,}円に設定しました")
+    user_data[user_id]["hourly_wage"] = h_wage
+    wage = "{:,.2f}".format(wage)
+    await interaction.response.send_message(f"時給を{(h_wage):,}円に設定しました")
 
 # 計測開始
 @bot.tree.command(name="begin", description="仕事を始める")
 async def begin_work(interaction: discord.Interaction):
     user_id = interaction.user.id
-    h_pay = user_data[user_id]["hourly_pay"]
+    h_wage = user_data[user_id]["hourly_wage"]
     if user_id not in user_data:
         user_data[user_id] = {}
-    if user_id not in user_data or h_pay not in user_data[user_id]:
+    if user_id not in user_data or h_wage not in user_data[user_id]:
        await interaction.response.send_message("時給が設定されていません。")
        return
 
@@ -69,7 +70,7 @@ async def rest_work(interaction: discord.Interaction):
 @bot.tree.command(name="finish", description="仕事を終える")
 async def finish_work(interaction: discord.Interaction):
     user_id = interaction.user.id
-    h_pay = user_data[user_id]["hourly_pay"]
+    h_wage = user_data[user_id]["hourly_wage"]
     if user_id in user_data and "start_time" in user_data[user_id]:
 
         # `/rest`コマンドの途中であればリアクションによる確認を行う
@@ -95,15 +96,15 @@ async def finish_work(interaction: discord.Interaction):
                 
                 elapsed_time = finish_time - start_time - total_rest_duration
                 seconds = int(elapsed_time.total_seconds())
-                total_pay = (seconds / 3600) * h_pay
+                total_wage = (seconds / 3600) * h_wage
                 elapsed_str = f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
-                total_pay_formatted = "{:,.2f}".format(total_pay)
+                total_wage_formatted = "{:,.2f}".format(total_wage)
                 await interaction.followup.send(
                     (
                      f"{interaction.user.mention} お疲れ様です。\n"
-                     f"時給: {(h_pay):,}円\n"
+                     f"時給: {(h_wage):,}円\n"
                      f"今回の作業時間: {elapsed_str}\n"
-                     f"今回分の賃金: {total_pay_formatted}円\n"
+                     f"今回分の賃金: {total_wage_formatted}円\n"
                      f"`[finish]`"
                     )
                 )
@@ -122,15 +123,15 @@ async def finish_work(interaction: discord.Interaction):
             
             elapsed_time = finish_time - start_time - total_rest_duration
             seconds = int(elapsed_time.total_seconds())
-            total_pay = (seconds / 3600) * h_pay
+            total_wage = (seconds / 3600) * h_wage
             elapsed_str = f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
-            total_pay_formatted = "{:,.2f}".format(total_pay)
+            total_wage_formatted = "{:,.2f}".format(total_wage)
             await interaction.response.send_message(
                 (
                  f"{interaction.user.mention} お疲れ様です。\n"
-                 f"時給: {(h_pay):,}円\n"
+                 f"時給: {(h_wage):,}円\n"
                  f"今回の作業時間: {elapsed_str}\n"
-                 f"今回分の賃金: {total_pay_formatted}円\n"
+                 f"今回分の賃金: {total_wage_formatted}円\n"
                  f"`[finish]`"
                 )
             )
@@ -146,7 +147,7 @@ async def finish_work(interaction: discord.Interaction):
 @app_commands.describe(hours="作業時間（時）", minutes="作業時間（分）", message_link="削除するメッセージのリンク（オプション）")
 async def fix_work(interaction: discord.Interaction, hours: int, minutes: int, message_link: str = None):
     user_id = interaction.user.id
-    h_pay = user_data[user_id]["hourly_pay"]
+    h_wage = user_data[user_id]["hourly_wage"]
     try:
         if message_link is not None and message_link.strip():  # リンクが存在し，空白でない場合に処理を行う
             try:
@@ -179,15 +180,15 @@ async def fix_work(interaction: discord.Interaction, hours: int, minutes: int, m
             seconds = int(elapsed_time.total_seconds())
             elapsed_str = f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
         
-            total_pay = (seconds / 3600) * h_pay
-            total_pay_formatted = "{:,.2f}".format(total_pay)
+            total_wage = (seconds / 3600) * h_wage
+            total_wage_formatted = "{:,.2f}".format(total_wage)
         
             await interaction.response.send_message(
                 (
                 f"{interaction.user.mention} 以下の内容で修正します:\n"
-                f"時給: {(h_pay):,}円\n"
+                f"時給: {(h_wage):,}円\n"
                 f"今回の作業時間: {elapsed_str}\n"
-                f"今回分の賃金: {total_pay_formatted}円\n"
+                f"今回分の賃金: {total_wage_formatted}円\n"
                 f"`[fix]`"
                 )
             )
@@ -205,10 +206,10 @@ async def daily_sum_work(interaction: discord.Interaction, month: int, day: int)
     channel = interaction.channel
     id_code = ["[finish]", "[fix]"]
 
-    total_pay = 0.0
+    total_wage = 0.0
     total_seconds = 0
     time_pattern = re.compile(r"今回の作業時間: (\d+):(\d{2}):(\d{2})")
-    pay_pattern = re.compile(r"今回分の賃金: ([\d,]+\.\d{2})円")
+    wage_pattern = re.compile(r"今回分の賃金: ([\d,]+\.\d{2})円")
     
     # 現在の年を取得（年内のものを検索するため）
     current_year = datetime.datetime.now().year
@@ -221,11 +222,11 @@ async def daily_sum_work(interaction: discord.Interaction, month: int, day: int)
     # 指定された範囲内のメッセージを検索
     async for message in channel.history(limit=1000, after=start_time, before=end_time):
         if message.author == bot.user and user_mention in message.content and any(code in message.content for code in id_code):
-            pay_match = pay_pattern.search(message.content)
+            wage_match = wage_pattern.search(message.content)
             time_match = time_pattern.search(message.content)
-            if pay_match:
-                extracted_pay = pay_match.group(1).replace(",", "")
-                total_pay += float(extracted_pay)
+            if wage_match:
+                extracted_wage = wage_match.group(1).replace(",", "")
+                total_wage += float(extracted_wage)
             if time_match:
                 hours, minutes, seconds = map(int, time_match.groups())
                 total_seconds += hours * 3600 + minutes * 60 + seconds
@@ -235,12 +236,12 @@ async def daily_sum_work(interaction: discord.Interaction, month: int, day: int)
     total_seconds_remaining = total_seconds % 60
     elapsed_str = f"{total_hours}:{total_minutes:02d}:{total_seconds_remaining:02d}"
     
-    total_pay_formatted = "{:,.2f}".format(total_pay)
+    total_wage_formatted = "{:,.2f}".format(total_wage)
     await interaction.response.send_message(
         (
         f"{user_mention}の{current_year}/{month:02}/{day:02}の仕事内容:\n"
         f"合計作業時間: {elapsed_str}\n"
-        f"合計賃金: {total_pay_formatted}円"
+        f"合計賃金: {total_wage_formatted}円"
         )
     )
 
@@ -251,19 +252,19 @@ async def sum_work(interaction: discord.Interaction):
     channel = interaction.channel
     id_code = ["[finish]", "[fix]"]
     
-    total_pay = 0.0
+    total_wage = 0.0
     total_seconds = 0
     time_pattern = re.compile(r"今回の作業時間: (\d+):(\d{2}):(\d{2})")
-    pay_pattern = re.compile(r"今回分の賃金: ([\d,]+\.\d{2})円")
+    wage_pattern = re.compile(r"今回分の賃金: ([\d,]+\.\d{2})円")
     
     # チャンネルのメッセージ履歴から情報を取得
     async for message in channel.history(limit=1000):
         if message.author == bot.user and user_mention in message.content and any(code in message.content for code in id_code):
-            pay_match = pay_pattern.search(message.content)
+            wage_match = wage_pattern.search(message.content)
             time_match = time_pattern.search(message.content)
-            if pay_match:
-                extracted_pay = pay_match.group(1).replace(",", "")
-                total_pay += float(extracted_pay)
+            if wage_match:
+                extracted_wage = wage_match.group(1).replace(",", "")
+                total_wage += float(extracted_wage)
             if time_match:
                 hours, minutes, seconds = map(int, time_match.groups())
                 total_seconds += hours * 3600 + minutes * 60 + seconds
@@ -273,12 +274,12 @@ async def sum_work(interaction: discord.Interaction):
     total_seconds_remaining = total_seconds % 60
     elapsed_str = f"{total_hours}:{total_minutes:02d}:{total_seconds_remaining:02d}"
     
-    total_pay_formatted = "{:,.2f}".format(total_pay)
+    total_wage_formatted = "{:,.2f}".format(total_wage)
     await interaction.response.send_message(
         (
         f"{user_mention}のこれまでの仕事内容:\n"
         f"合計作業時間: {elapsed_str}\n"
-        f"合計賃金: {total_pay_formatted}円"
+        f"合計賃金: {total_wage_formatted}円"
         )
     )
 
@@ -306,10 +307,10 @@ async def reset_messages(interaction: discord.Interaction):
         return
 
     # 先に合計作業時間と合計賃金が計算される
-    total_pay = 0.0
+    total_wage = 0.0
     total_seconds = 0
     time_pattern = re.compile(r"今回の作業時間: (\d+):(\d{2}):(\d{2})")
-    pay_pattern = re.compile(r"今回分の賃金: ([\d,]+\.\d{2})円")
+    wage_pattern = re.compile(r"今回分の賃金: ([\d,]+\.\d{2})円")
 
     deleted_count = 0
     
@@ -317,9 +318,9 @@ async def reset_messages(interaction: discord.Interaction):
     async for message in channel.history(limit=1000):
         if message.author == bot.user and user_mention in message.content:
             if "[finish]" in message.content or "[fix]" in message.content:
-                if pay_match := pay_pattern.search(message.content):
-                    extracted_pay = pay_match.group(1).replace(",", "")
-                    total_pay += float(extracted_pay)
+                if wage_match := wage_pattern.search(message.content):
+                    extracted_wage = wage_match.group(1).replace(",", "")
+                    total_wage += float(extracted_wage)
                 if time_match := time_pattern.search(message.content):
                     hours, minutes, seconds = map(int, time_match.groups())
                     total_seconds += hours * 3600 + minutes * 60 + seconds
@@ -334,9 +335,9 @@ async def reset_messages(interaction: discord.Interaction):
     total_seconds_remaining = total_seconds % 60
     elapsed_str = f"{total_hours}:{total_minutes:02d}:{total_seconds_remaining:02d}"
 
-    total_pay_formatted = "{:,.2f}".format(total_pay)
+    total_wage_formatted = "{:,.2f}".format(total_wage)
     await interaction.followup.send(
-        f"これまでのコマンドを削除し、{user_mention} の合計作業時間（{elapsed_str}）と合計賃金（{total_pay_formatted}円）をリセットしました。"
+        f"これまでのコマンドを削除し、{user_mention} の合計作業時間（{elapsed_str}）と合計賃金（{total_wage_formatted}円）をリセットしました。"
     )
 
 bot.run(BOT_TOKEN)
