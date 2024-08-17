@@ -38,7 +38,7 @@
 3. コンソールからBotを起動します．
 
 ## その他
-- 日付や時刻の操作に[datetime](https://docs.python.org/ja/3/library/datetime.html)というライブラリを使用しています．
-- 正規表現マッチング操作に[re](https://docs.python.org/ja/3/library/re.html)というライブラリを使用しています．
+- 日付や時刻の操作には[datetime](https://docs.python.org/ja/3/library/datetime.html)というライブラリを使用しています．
+- 正規表現マッチング操作には[re](https://docs.python.org/ja/3/library/re.html)というライブラリを使用しています．
 - 作業記録を参照するコマンドは同一のチャンネルに投稿されたメッセージを認識することによって行われるため，作業記録コマンドは定めたチャンネルで使用するようにしてください．
 - ユーザーやメッセージの識別にはメンションと特定の文字列を検出して判断するようにしているため，作業終了などのたびに各々が添付されます．
