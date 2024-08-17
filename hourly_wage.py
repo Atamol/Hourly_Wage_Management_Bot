@@ -11,7 +11,6 @@ class bot(discord.Client):
         super().__init__(*args, **kwargs)
         self.tree = app_commands.CommandTree(self)
         self.user_pending_reaction = set()
-
     async def on_ready(self):
         await self.tree.sync()
         print(f"Logged in as {self.user}!")
@@ -23,9 +22,9 @@ user_data = {}
 @bot.tree.command(name="hourly_wage", description="時給を設定する")
 async def set_hourly_wage(interaction: discord.Interaction, h_wage: int):
     user_id = interaction.user.id
-    h_wage = user_data[user_id]["hourly_wage"]
     if user_id not in user_data:
        user_data[user_id] = {}
+    user_data[user_id]["hourly_wage"] = h_wage
     await interaction.response.send_message(f"時給を{(h_wage):,}円に設定しました")
 
 # 計測開始
@@ -34,10 +33,9 @@ async def begin_work(interaction: discord.Interaction):
     user_id = interaction.user.id
     if user_id not in user_data:
         user_data[user_id] = {}
-    if user_id not in user_data or "hourly_wage" not in user_data[user_id]:
+    if "hourly_wage" not in user_data[user_id]:
        await interaction.response.send_message("時給が設定されていません。")
        return
-
     if "start_time" in user_data[user_id]:
         await interaction.response.send_message("すでに打刻されています。")
     else:
