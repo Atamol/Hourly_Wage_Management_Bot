@@ -1,3 +1,6 @@
+![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.x-blue)
+
 # Discordによる時給・労働時間管理Bot
 このBotはDiscord上で作業の開始・終了時刻を記録し，設定された時給に基づいて自動的に賃金を計算することができます．<br>
 作業の一時停止や手動での時間修正などといった複雑な機能も備わっています．<br>
@@ -29,6 +32,3 @@
 - datetimeというライブラリを日時の操作に用いています．
 - 作業記録を参照するコマンドは同一のチャンネルに投稿されたメッセージを認識することによって行われるため，作業記録コマンドは定めたチャンネルで使用するようにしてください．
 - ユーザーやメッセージの識別にはメンションと特定の文字列を検出して判断するようにしているため，作業終了などのたびに各々が添付されます．
-
-![License](https://img.shields.io/badge/license-MIT-green)
-![Python](https://img.shields.io/badge/python-3.x-blue)
