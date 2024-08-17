@@ -23,20 +23,18 @@ user_data = {}
 @bot.tree.command(name="hourly_wage", description="時給を設定する")
 async def set_hourly_wage(interaction: discord.Interaction, h_wage: int):
     user_id = interaction.user.id
+    h_wage = user_data[user_id]["hourly_wage"]
     if user_id not in user_data:
        user_data[user_id] = {}
-    user_data[user_id]["hourly_wage"] = h_wage
-    wage = "{:,.2f}".format(wage)
     await interaction.response.send_message(f"時給を{(h_wage):,}円に設定しました")
 
 # 計測開始
 @bot.tree.command(name="begin", description="仕事を始める")
 async def begin_work(interaction: discord.Interaction):
     user_id = interaction.user.id
-    h_wage = user_data[user_id]["hourly_wage"]
     if user_id not in user_data:
         user_data[user_id] = {}
-    if user_id not in user_data or h_wage not in user_data[user_id]:
+    if user_id not in user_data or "hourly_wage" not in user_data[user_id]:
        await interaction.response.send_message("時給が設定されていません。")
        return
 
@@ -203,6 +201,8 @@ async def fix_work(interaction: discord.Interaction, hours: int, minutes: int, m
 @bot.tree.command(name="daily_sum", description="指定された日の午前6:00から翌朝の午前5:59までの間の作業時間と合計賃金を計算する")
 async def daily_sum_work(interaction: discord.Interaction, month: int, day: int):
     user_mention = interaction.user.mention
+    user_id = interaction.user.id
+    h_wage = user_data[user_id]["hourly_wage"]
     channel = interaction.channel
     id_code = ["[finish]", "[fix]"]
 
@@ -240,6 +240,7 @@ async def daily_sum_work(interaction: discord.Interaction, month: int, day: int)
     await interaction.response.send_message(
         (
         f"{user_mention}の{current_year}/{month:02}/{day:02}の仕事内容:\n"
+        f"時給: {(h_wage):,}円\n"
         f"合計作業時間: {elapsed_str}\n"
         f"合計賃金: {total_wage_formatted}円"
         )
@@ -249,6 +250,8 @@ async def daily_sum_work(interaction: discord.Interaction, month: int, day: int)
 @bot.tree.command(name="sum", description="これまでの作業時間と賃金を計算する")
 async def sum_work(interaction: discord.Interaction):
     user_mention = interaction.user.mention
+    user_id = interaction.user.id
+    h_wage = user_data[user_id]["hourly_wage"]
     channel = interaction.channel
     id_code = ["[finish]", "[fix]"]
     
@@ -278,6 +281,7 @@ async def sum_work(interaction: discord.Interaction):
     await interaction.response.send_message(
         (
         f"{user_mention}のこれまでの仕事内容:\n"
+        f"時給: {(h_wage):,}円\n"
         f"合計作業時間: {elapsed_str}\n"
         f"合計賃金: {total_wage_formatted}円"
         )
