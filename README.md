@@ -1,4 +1,4 @@
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-MIT-green)<br>
 ![Python](https://img.shields.io/badge/python-3.x-blue)
 
 # Discordによる時給・労働時間管理Bot
