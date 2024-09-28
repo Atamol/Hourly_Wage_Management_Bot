@@ -19,13 +19,13 @@ bot = bot(intents=discord.Intents.default())
 user_data = {}
 
 # 時給の設定
-@bot.tree.command(name="hourly_wage", description="時給を設定する")
-async def set_hourly_wage(interaction: discord.Interaction, h_wage: int):
+@bot.tree.command(name="wage", description="時給を設定する")
+async def set_hourly(interaction: discord.Interaction, hourly: int):
     user_id = interaction.user.id
     if user_id not in user_data:
        user_data[user_id] = {}
-    user_data[user_id]["hourly_wage"] = h_wage
-    await interaction.response.send_message(f"時給を{(h_wage):,}円に設定しました")
+    user_data[user_id]["hourly"] = hourly
+    await interaction.response.send_message(f"時給を{(hourly):,}円に設定しました")
 
 # 計測開始
 @bot.tree.command(name="begin", description="仕事を始める")
@@ -33,7 +33,7 @@ async def begin_work(interaction: discord.Interaction):
     user_id = interaction.user.id
     if user_id not in user_data:
         user_data[user_id] = {}
-    if "hourly_wage" not in user_data[user_id]:
+    if "hourly" not in user_data[user_id]:
        await interaction.response.send_message("時給が設定されていません。")
        return
     if "start_time" in user_data[user_id]:
@@ -66,7 +66,7 @@ async def rest_work(interaction: discord.Interaction):
 @bot.tree.command(name="finish", description="仕事を終える")
 async def finish_work(interaction: discord.Interaction):
     user_id = interaction.user.id
-    h_wage = user_data[user_id]["hourly_wage"]
+    hourly = user_data[user_id]["hourly"]
     if user_id in user_data and "start_time" in user_data[user_id]:
 
         # `/rest`コマンドの途中であればリアクションによる確認を行う
@@ -92,13 +92,13 @@ async def finish_work(interaction: discord.Interaction):
                 
                 elapsed_time = finish_time - start_time - total_rest_duration
                 seconds = int(elapsed_time.total_seconds())
-                total_wage = (seconds / 3600) * h_wage
+                total_wage = (seconds / 3600) * hourly
                 elapsed_str = f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
                 total_wage_formatted = "{:,.2f}".format(total_wage)
                 await interaction.followup.send(
                     (
                      f"{interaction.user.mention} お疲れ様です。\n"
-                     f"時給: {(h_wage):,}円\n"
+                     f"時給: {(hourly):,}円\n"
                      f"今回の作業時間: {elapsed_str}\n"
                      f"今回分の賃金: {total_wage_formatted}円\n"
                      f"`[finish]`"
@@ -109,7 +109,7 @@ async def finish_work(interaction: discord.Interaction):
                 if "rest_start_time" in user_data[user_id]:
                     del user_data[user_id]["rest_start_time"]
 
-            # Nを押すと`/finish`をキャンセルして休憩を再開する
+            # Nを選ぶと`/finish`をキャンセルして休憩を再開する
             elif str(reaction.emoji) == "🇳":
                 await interaction.followup.send("休憩を再開します。")
         else:
@@ -119,13 +119,13 @@ async def finish_work(interaction: discord.Interaction):
             
             elapsed_time = finish_time - start_time - total_rest_duration
             seconds = int(elapsed_time.total_seconds())
-            total_wage = (seconds / 3600) * h_wage
+            total_wage = (seconds / 3600) * hourly
             elapsed_str = f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
             total_wage_formatted = "{:,.2f}".format(total_wage)
             await interaction.response.send_message(
                 (
                  f"{interaction.user.mention} お疲れ様です。\n"
-                 f"時給: {(h_wage):,}円\n"
+                 f"時給: {(hourly):,}円\n"
                  f"今回の作業時間: {elapsed_str}\n"
                  f"今回分の賃金: {total_wage_formatted}円\n"
                  f"`[finish]`"
@@ -143,7 +143,10 @@ async def finish_work(interaction: discord.Interaction):
 @app_commands.describe(hours="作業時間（時）", minutes="作業時間（分）", message_link="削除するメッセージのリンク（オプション）")
 async def fix_work(interaction: discord.Interaction, hours: int, minutes: int, message_link: str = None):
     user_id = interaction.user.id
-    h_wage = user_data[user_id]["hourly_wage"]
+    hourly = user_data[user_id]["hourly"]
+    if user_id not in user_data or "hourly" not in user_data[user_id]:
+        await interaction.response.send_message("時給が設定されていません。")
+        return
     try:
         if message_link is not None and message_link.strip():  # リンクが存在し，空白でない場合に処理を行う
             try:
@@ -176,13 +179,13 @@ async def fix_work(interaction: discord.Interaction, hours: int, minutes: int, m
             seconds = int(elapsed_time.total_seconds())
             elapsed_str = f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
         
-            total_wage = (seconds / 3600) * h_wage
+            total_wage = (seconds / 3600) * hourly
             total_wage_formatted = "{:,.2f}".format(total_wage)
         
             await interaction.response.send_message(
                 (
                 f"{interaction.user.mention} 以下の内容で修正します:\n"
-                f"時給: {(h_wage):,}円\n"
+                f"時給: {(hourly):,}円\n"
                 f"今回の作業時間: {elapsed_str}\n"
                 f"今回分の賃金: {total_wage_formatted}円\n"
                 f"`[fix]`"
@@ -196,11 +199,15 @@ async def fix_work(interaction: discord.Interaction, hours: int, minutes: int, m
 
 
 # 1日分の作業時間と給料を計算する
-@bot.tree.command(name="daily_sum", description="指定された日の午前6:00から翌朝の午前5:59までの間の作業時間と合計賃金を計算する")
+@bot.tree.command(name="daily", description="指定された日の午前6:00から翌朝の午前5:59までの間の作業時間と合計賃金を計算する")
 async def daily_sum_work(interaction: discord.Interaction, month: int, day: int):
-    user_mention = interaction.user.mention
     user_id = interaction.user.id
-    h_wage = user_data[user_id]["hourly_wage"]
+    if user_id not in user_data or "hourly" not in user_data[user_id]:
+        await interaction.response.send_message("時給が設定されていません。")
+        return
+    
+    hourly = user_data[user_id]["hourly"]
+    user_mention = interaction.user.mention
     channel = interaction.channel
     id_code = ["[finish]", "[fix]"]
 
@@ -238,7 +245,7 @@ async def daily_sum_work(interaction: discord.Interaction, month: int, day: int)
     await interaction.response.send_message(
         (
         f"{user_mention}の{current_year}/{month:02}/{day:02}の仕事内容:\n"
-        f"時給: {(h_wage):,}円\n"
+        f"現在時給: {(hourly):,}円\n"
         f"合計作業時間: {elapsed_str}\n"
         f"合計賃金: {total_wage_formatted}円"
         )
@@ -247,12 +254,15 @@ async def daily_sum_work(interaction: discord.Interaction, month: int, day: int)
 # これまでの作業時間と賃金を計算する
 @bot.tree.command(name="sum", description="これまでの作業時間と賃金を計算する")
 async def sum_work(interaction: discord.Interaction):
-    user_mention = interaction.user.mention
     user_id = interaction.user.id
-    h_wage = user_data[user_id]["hourly_wage"]
+    if user_id not in user_data or "hourly" not in user_data[user_id]:
+        await interaction.response.send_message("時給が設定されていません。")
+        return
+    hourly = user_data[user_id]["hourly"]
+    user_mention = interaction.user.mention
     channel = interaction.channel
     id_code = ["[finish]", "[fix]"]
-    
+
     total_wage = 0.0
     total_seconds = 0
     time_pattern = re.compile(r"今回の作業時間: (\d+):(\d{2}):(\d{2})")
@@ -279,7 +289,7 @@ async def sum_work(interaction: discord.Interaction):
     await interaction.response.send_message(
         (
         f"{user_mention}のこれまでの仕事内容:\n"
-        f"時給: {(h_wage):,}円\n"
+        f"現在の時給: {(hourly):,}円\n"
         f"合計作業時間: {elapsed_str}\n"
         f"合計賃金: {total_wage_formatted}円"
         )
@@ -303,7 +313,7 @@ async def reset_messages(interaction: discord.Interaction):
 
     reaction, user = await bot.wait_for("reaction_add", check=check)
 
-    # Nを押すとキャンセル
+    # Nを選ぶとキャンセル
     if str(reaction.emoji) == "🇳":
         await interaction.followup.send("リセットをキャンセルしました。")
         return
@@ -317,7 +327,7 @@ async def reset_messages(interaction: discord.Interaction):
     deleted_count = 0
     
     # チャンネルのメッセージ履歴から対象のメッセージを検索して削除
-    async for message in channel.history(limit=1000):
+    async for message in channel.history(limit=1000):  # 1000件を取得
         if message.author == bot.user and user_mention in message.content:
             if "[finish]" in message.content or "[fix]" in message.content:
                 if wage_match := wage_pattern.search(message.content):
