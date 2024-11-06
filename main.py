@@ -4,7 +4,7 @@ from discord import app_commands
 import datetime
 import re
 
-BOT_TOKEN = "YOUR_BOT_TOKEN"
+BOT_TOKEN = "TOKEN"
 
 class bot(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -66,53 +66,31 @@ async def rest_work(interaction: discord.Interaction):
 @bot.tree.command(name="finish", description="仕事を終える")
 async def finish_work(interaction: discord.Interaction):
     user_id = interaction.user.id
+    
+    # `start_time` の存在チェックのみを行う
+    if user_id not in user_data or "start_time" not in user_data[user_id]:
+        await interaction.response.send_message("打刻されていません。")
+        return
+
     hourly = user_data[user_id]["hourly"]
-    if user_id in user_data and "start_time" in user_data[user_id]:
 
-        # `/rest`コマンドの途中であればリアクションによる確認を行う
-        if "rest_start_time" in user_data[user_id]:
-            await interaction.response.defer()
-            message = await interaction.followup.send("まだ休憩中です。\n作業時間の計測を終了してよろしいですか？")
-            await message.add_reaction("🇾")
-            await message.add_reaction("🇳")
+    # `/rest`コマンドの途中であればリアクションによる確認を行う
+    if "rest_start_time" in user_data[user_id]:
+        await interaction.response.defer()
+        message = await interaction.followup.send("まだ休憩中です。\n作業時間の計測を終了してよろしいですか？")
+        await message.add_reaction("🇾")
+        await message.add_reaction("🇳")
 
-            bot.user_pending_reaction.add(user_id)
+        bot.user_pending_reaction.add(user_id)
 
-            def check(reaction, user):
-                return user == interaction.user and str(reaction.emoji) in ["🇾", "🇳"]
+        def check(reaction, user):
+            return user == interaction.user and str(reaction.emoji) in ["🇾", "🇳"]
 
-            reaction, user = await bot.wait_for("reaction_add", check=check)
-            bot.user_pending_reaction.remove(user_id)
+        reaction, user = await bot.wait_for("reaction_add", check=check)
+        bot.user_pending_reaction.remove(user_id)
 
-            # Yを選ぶとそのまま計測を終了する
-            if str(reaction.emoji) == "🇾":
-                finish_time = datetime.datetime.now()
-                start_time = user_data[user_id]["start_time"]
-                total_rest_duration = user_data[user_id].get("total_rest_duration", datetime.timedelta())
-                
-                elapsed_time = finish_time - start_time - total_rest_duration
-                seconds = int(elapsed_time.total_seconds())
-                total_wage = (seconds / 3600) * hourly
-                elapsed_str = f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
-                total_wage_formatted = "{:,.2f}".format(total_wage)
-                await interaction.followup.send(
-                    (
-                     f"{interaction.user.mention} お疲れ様です。\n"
-                     f"時給: {(hourly):,}円\n"
-                     f"今回の作業時間: {elapsed_str}\n"
-                     f"今回分の賃金: {total_wage_formatted}円\n"
-                     f"`[finish]`"
-                    )
-                )
-                del user_data[user_id]["start_time"]
-                del user_data[user_id]["total_rest_duration"]
-                if "rest_start_time" in user_data[user_id]:
-                    del user_data[user_id]["rest_start_time"]
-
-            # Nを選ぶと`/finish`をキャンセルして休憩を再開する
-            elif str(reaction.emoji) == "🇳":
-                await interaction.followup.send("休憩を再開します。")
-        else:
+        # Yを選ぶとそのまま計測を終了する
+        if str(reaction.emoji) == "🇾":
             finish_time = datetime.datetime.now()
             start_time = user_data[user_id]["start_time"]
             total_rest_duration = user_data[user_id].get("total_rest_duration", datetime.timedelta())
@@ -122,7 +100,7 @@ async def finish_work(interaction: discord.Interaction):
             total_wage = (seconds / 3600) * hourly
             elapsed_str = f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
             total_wage_formatted = "{:,.2f}".format(total_wage)
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 (
                  f"{interaction.user.mention} お疲れ様です。\n"
                  f"時給: {(hourly):,}円\n"
@@ -135,8 +113,33 @@ async def finish_work(interaction: discord.Interaction):
             del user_data[user_id]["total_rest_duration"]
             if "rest_start_time" in user_data[user_id]:
                 del user_data[user_id]["rest_start_time"]
+
+        # Nを選ぶと`/finish`をキャンセルして休憩を再開する
+        elif str(reaction.emoji) == "🇳":
+            await interaction.followup.send("休憩を再開します。")
     else:
-        await interaction.response.send_message("打刻されていません。")
+        finish_time = datetime.datetime.now()
+        start_time = user_data[user_id]["start_time"]
+        total_rest_duration = user_data[user_id].get("total_rest_duration", datetime.timedelta())
+        
+        elapsed_time = finish_time - start_time - total_rest_duration
+        seconds = int(elapsed_time.total_seconds())
+        total_wage = (seconds / 3600) * hourly
+        elapsed_str = f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
+        total_wage_formatted = "{:,.2f}".format(total_wage)
+        await interaction.response.send_message(
+            (
+             f"{interaction.user.mention} お疲れ様です。\n"
+             f"時給: {(hourly):,}円\n"
+             f"今回の作業時間: {elapsed_str}\n"
+             f"今回分の賃金: {total_wage_formatted}円\n"
+             f"`[finish]`"
+            )
+        )
+        del user_data[user_id]["start_time"]
+        del user_data[user_id]["total_rest_duration"]
+        if "rest_start_time" in user_data[user_id]:
+            del user_data[user_id]["rest_start_time"]
 
 # 手動で作業時間を入力し，給料を設定する
 @bot.tree.command(name="fix", description="手動で作業時間を設定し，指定した`/finish`または`/fix`コマンドを削除する（オプション）")
